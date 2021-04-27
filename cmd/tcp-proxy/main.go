@@ -90,7 +90,15 @@ func main() {
 			Color:       *colors,
 		}
 
-		go p.Start()
+		go func() {
+			remoteAddrChannel := make(chan *net.TCPAddr, 1)
+			p.Start(remoteAddrChannel)
+			receivedAddr := <-remoteAddrChannel
+			if receivedAddr != nil && !raddr.IP.Equal(receivedAddr.IP) {
+				logger.Info("Remote's IP address has been changed from %s to %s\n", raddr.IP, receivedAddr.IP)
+				raddr = receivedAddr
+			}
+		}()
 	}
 }
 
