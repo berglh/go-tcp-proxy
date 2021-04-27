@@ -56,8 +56,14 @@ type setNoDelayer interface {
 }
 
 // Start - open connection to remote and start proxying data.
-func (p *Proxy) Start() {
+func (p *Proxy) Start(remoteChannel chan <- *net.TCPAddr) {
 	defer p.lconn.Close()
+	var sentRemoteAddress bool
+	defer func() {
+		if !sentRemoteAddress {
+			remoteChannel <- nil
+		}
+	}()
 
 	var err error
 	//connect to remote
@@ -73,6 +79,8 @@ func (p *Proxy) Start() {
 			p.Log.Warn("Remote connection failed: %s", err)
 			return
 		}
+		remoteChannel <- p.raddr
+		sentRemoteAddress = true
 		p.rconn, err = net.DialTCP("tcp", nil, p.raddr)
 		if err != nil {
 			p.Log.Warn("Remote connection failed: %s", err)
